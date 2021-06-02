@@ -2,9 +2,12 @@ const MESSAGE = {
   REQUIRED: "Vui lòng điền vào thông tin này!",
   SEND_SUCCESS:
     "CV của bạn đã được gửi đến cho chúng tôi, chúng tôi sẽ phản hồi lại ngay sau khi nhận được. Cám ơn bạn!",
+  SEND_ERROR: "Đã có lỗi xảy ra!",
+  EMAIL_FORMAT_ERROR: "Vui lòng nhập email đúng định dạng!",
+  NAME_FORMAT_ERROR: "Vui lòng điền vào đầy đủ họ và tên!",
+  PHONE_LENGTH_ERROR: "The length of phone number should be 10-12 characters!",
 };
-const emailRegex =
-  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+const emailRegex = /^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$/;
 
 (function () {
   const fields = ["name", "phone", "position", "exp", "picture", "email"];
@@ -15,24 +18,39 @@ const emailRegex =
   const infoForm = document.getElementById("infoForm");
   const notificationDOM = document.getElementById("notification");
 
-  const triggerRender = (name) => {
-    formErrorDOM[name].innerText = errors[name];
+  const render = {
+    errorInput: (name) => {
+      formErrorDOM[name].innerText = errors[name];
 
-    if (errors[name]) formInputDOM[name].classList.add("f-control--error");
-    else formInputDOM[name].classList.remove("f-control--error");
+      if (errors[name]) formInputDOM[name].classList.add("f-control--error");
+      else formInputDOM[name].classList.remove("f-control--error");
+    },
+    notification: (message, variant = "success") => {
+      switch (variant) {
+        case "success":
+          notificationDOM.classList.remove("f-notification--error");
+          notificationDOM.innerText = message;
+          break;
+
+        case "error":
+          notificationDOM.classList.add("f-notification--error");
+          notificationDOM.innerText = message;
+          break;
+      }
+    },
   };
 
   const validateFns = {
     name: (value) => {
       if (!value) return MESSAGE.REQUIRED;
       if (value.split(" ").filter((word) => !!word).length < 2)
-        return "Vui lòng điền vào đầy đủ họ và tên!";
+        return MESSAGE.NAME_FORMAT_ERROR;
       return "";
     },
     phone: (value) => {
       if (!value) return MESSAGE.REQUIRED;
       if (!(value.length >= 10 && value.length <= 12))
-        return "The length of phone number should be 10-12 characters!";
+        return MESSAGE.PHONE_LENGTH_ERROR;
 
       return "";
     },
@@ -50,7 +68,7 @@ const emailRegex =
     },
     email: (value) => {
       if (!value) return MESSAGE.REQUIRED;
-      if (!emailRegex.test(value)) return "Vui lòng nhập email đúng định dạng!";
+      if (!emailRegex.test(value)) return MESSAGE.EMAIL_FORMAT_ERROR;
       return "";
     },
   };
@@ -62,7 +80,7 @@ const emailRegex =
   const triggerValidation = (name, value) => {
     const error = errors[name];
     validationField(name, value);
-    if (error != errors[name]) triggerRender(name);
+    if (error != errors[name]) render.errorInput(name);
   };
 
   const onInputChange = (event) => {
@@ -119,13 +137,11 @@ const emailRegex =
       .then((res) => res.json())
       .then((data) => {
         console.log(data);
-        notificationDOM.classList.remove("f-notification--error");
-        notificationDOM.innerText = MESSAGE.SEND_SUCCESS;
+        render.notification(MESSAGE.SEND_SUCCESS, "success");
       })
       .catch((err) => {
         console.log(err);
-        notificationDOM.classList.add("f-notification--error");
-        notificationDOM.innerText = "Đã có lỗi xảy ra!";
+        render.notification(MESSAGE.SEND_ERROR, "error");
       });
   };
 
